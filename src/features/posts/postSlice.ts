@@ -2,37 +2,40 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as api from "./postAPI";
 import { postType } from "./postTypes";
 
-export const getPosts = createAsyncThunk("posts/getPosts", async () => {
-  const response = await api.fetchPosts();
+export const getPosts = createAsyncThunk<postType[]>(
+  "posts/getPosts",
+  async () => {
+    const response = await api.fetchPosts();
+    return response.data;
+  }
+);
+
+export const createPost = createAsyncThunk<
+  postType,
+  { title: string; body: string; userId: number }
+>("posts/createPost", async (post) => {
+  const response = await api.addPost(post);
   return response.data;
 });
 
-export const createPost = createAsyncThunk(
-  "posts/createPost",
-  async (post: { title: string; body: string; userId: number }) => {
-    const response = await api.addPost(post);
-    return response.data;
-  }
-);
+export const editPost = createAsyncThunk<
+  postType,
+  { id: number; post: postType }
+>("posts/editPost", async ({ id, post }) => {
+  const response = await api.updatePost(id, post);
+  return response.data;
+});
 
-export const editPost = createAsyncThunk(
-  "posts/editPost",
-  async ({ id, post }: { id: number; post: postType }) => {
-    const response = await api.updatePost(id, post);
-    return response.data;
-  }
-);
-
-export const removePost = createAsyncThunk(
+export const removePost = createAsyncThunk<number, number>(
   "posts/removePost",
-  async (id: number) => {
+  async (id) => {
     await api.deletePost(id);
     return id;
   }
 );
 
 interface initialStateProps {
-  items: [] | postType[];
+  items: postType[];
   loading: "idle" | "failed" | "successful" | "loading";
   error: string | null;
 }
@@ -58,7 +61,11 @@ const postSlice = createSlice({
       })
       .addCase(getPosts.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message as string;
+        state.error = action.error.message || "Failed to fetch posts";
+      })
+
+      .addCase(createPost.pending, (state) => {
+        state.loading = "loading";
       })
       .addCase(createPost.fulfilled, (state, action) => {
         state.loading = "successful";
@@ -66,37 +73,36 @@ const postSlice = createSlice({
       })
       .addCase(createPost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message as string;
+        state.error = action.error.message || "Failed to create post";
       })
-      .addCase(createPost.pending, (state) => {
+
+      .addCase(editPost.pending, (state) => {
         state.loading = "loading";
       })
       .addCase(editPost.fulfilled, (state, action) => {
         state.loading = "successful";
         const index = state.items.findIndex(
-          (post: postType) => post.id === action.payload.id
+          (post) => post.id === action.payload.id
         );
-        if (index !== -1) state.items[index] = action.payload;
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
       })
       .addCase(editPost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message as string;
+        state.error = action.error.message || "Failed to edit post";
       })
-      .addCase(editPost.pending, (state) => {
+
+      .addCase(removePost.pending, (state) => {
         state.loading = "loading";
       })
       .addCase(removePost.fulfilled, (state, action) => {
         state.loading = "successful";
-        state.items = state.items.filter(
-          (post: postType) => post.id !== action.payload
-        );
+        state.items = state.items.filter((post) => post.id !== action.payload);
       })
       .addCase(removePost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message as string;
-      })
-      .addCase(removePost.pending, (state) => {
-        state.loading = "loading";
+        state.error = action.error.message || "Failed to delete post";
       });
   },
 });
