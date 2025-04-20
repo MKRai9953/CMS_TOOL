@@ -2,33 +2,34 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as api from "./postAPI";
 import { postType } from "./postTypes";
 
-export const getPosts = createAsyncThunk<postType[]>(
-  "posts/getPosts",
-  async () => {
-    const response = await api.fetchPosts();
+export const createPost = createAsyncThunk<
+  postType,
+  {
+    userId: number;
+    body: string;
+    title: string;
+  }
+>("posts/createPost", async (postData) => {
+  const response = await api.addPost(postData);
+  return response.data;
+});
+
+export const getPosts = createAsyncThunk("posts/getPosts", async () => {
+  const response = await api.fetchPosts();
+  return response.data;
+});
+
+export const editPost = createAsyncThunk(
+  "posts/editPost",
+  async ({ id, post }: { id: number; post: postType }) => {
+    const response = await api.updatePost(id, post);
     return response.data;
   }
 );
 
-export const createPost = createAsyncThunk<
-  postType,
-  { title: string; body: string; userId: number }
->("posts/createPost", async (post) => {
-  const response = await api.addPost(post);
-  return response.data;
-});
-
-export const editPost = createAsyncThunk<
-  postType,
-  { id: number; post: postType }
->("posts/editPost", async ({ id, post }) => {
-  const response = await api.updatePost(id, post);
-  return response.data;
-});
-
-export const removePost = createAsyncThunk<number, number>(
+export const removePost = createAsyncThunk(
   "posts/removePost",
-  async (id) => {
+  async (id: number) => {
     await api.deletePost(id);
     return id;
   }
@@ -61,11 +62,7 @@ const postSlice = createSlice({
       })
       .addCase(getPosts.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message || "Failed to fetch posts";
-      })
-
-      .addCase(createPost.pending, (state) => {
-        state.loading = "loading";
+        state.error = action.error.message as string;
       })
       .addCase(createPost.fulfilled, (state, action) => {
         state.loading = "successful";
@@ -73,36 +70,37 @@ const postSlice = createSlice({
       })
       .addCase(createPost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message || "Failed to create post";
+        state.error = action.error.message as string;
       })
-
-      .addCase(editPost.pending, (state) => {
+      .addCase(createPost.pending, (state) => {
         state.loading = "loading";
       })
       .addCase(editPost.fulfilled, (state, action) => {
         state.loading = "successful";
         const index = state.items.findIndex(
-          (post) => post.id === action.payload.id
+          (post: postType) => post.id === action.payload.id
         );
-        if (index !== -1) {
-          state.items[index] = action.payload;
-        }
+        if (index !== -1) state.items[index] = action.payload;
       })
       .addCase(editPost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message || "Failed to edit post";
+        state.error = action.error.message as string;
       })
-
-      .addCase(removePost.pending, (state) => {
+      .addCase(editPost.pending, (state) => {
         state.loading = "loading";
       })
       .addCase(removePost.fulfilled, (state, action) => {
         state.loading = "successful";
-        state.items = state.items.filter((post) => post.id !== action.payload);
+        state.items = state.items.filter(
+          (post: postType) => post.id !== action.payload
+        );
       })
       .addCase(removePost.rejected, (state, action) => {
         state.loading = "failed";
-        state.error = action.error.message || "Failed to delete post";
+        state.error = action.error.message as string;
+      })
+      .addCase(removePost.pending, (state) => {
+        state.loading = "loading";
       });
   },
 });

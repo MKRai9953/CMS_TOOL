@@ -25,6 +25,7 @@ const CreatePosts = () => {
 
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const prevPosts = JSON.parse(localStorage.getItem("posts") || "[]");
 
     const titleValidation = validateAlphanumeric(title);
     const contentValidation = validateAlphanumeric(content);
@@ -51,12 +52,7 @@ const CreatePosts = () => {
 
       toast("Your Post has been Created ✅", { transition: Slide });
 
-      const currentPosts = JSON.parse(localStorage.getItem("posts") || "[]");
-
-      localStorage.setItem(
-        "posts",
-        JSON.stringify([...currentPosts, result, ...posts])
-      );
+      localStorage.setItem("posts", JSON.stringify([result, prevPosts]));
 
       setTitle("");
       setContent("");

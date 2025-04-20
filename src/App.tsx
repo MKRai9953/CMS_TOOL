@@ -15,7 +15,7 @@ export default function App() {
           <Route path={"dashboard"} element={<Dashboard />} />
           <Route path={"create"} element={<CreatePosts />} />
           <Route path={"posts"} element={<Posts />}>
-            <Route path=":id" element={<></>} />
+            <Route path=":id" />
           </Route>
           <Route path={"edit/:id"} element={<CreatePosts />} />
         </Route>
